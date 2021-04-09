@@ -1,7 +1,7 @@
 import os
 
 import magic
-from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, FileResponse
+from django.http import HttpRequest, HttpResponse, HttpResponseBadRequest, FileResponse, HttpResponseNotAllowed
 from rest_framework import status
 from django.http import JsonResponse
 from app.forms import FileForm
@@ -16,7 +16,8 @@ def upload(request: HttpRequest) -> HttpResponse:
             hash_name = form.save()
             response = JsonResponse({'hash_name': str(hash_name)}, status=status.HTTP_200_OK)
             return response
-    return HttpResponseBadRequest()
+        return HttpResponseBadRequest()
+    return HttpResponseNotAllowed(permitted_methods='POST')
 
 
 def download_or_delete(request: HttpRequest) -> HttpResponse:
@@ -28,12 +29,10 @@ def download_or_delete(request: HttpRequest) -> HttpResponse:
                 path = settings.MEDIA_ROOT + "/" + str(obj.file)
                 if request.path == '/download/':
                     file_type = magic.from_file(path, mime=True)
-                    response = FileResponse(obj.file,  content_type=file_type)
+                    response = FileResponse(obj.file, content_type=file_type)
                 elif request.path == '/delete/':
                     os.remove(path)
                     obj.delete()
                     response = JsonResponse(data={'info': "The file was deleted."}, status=status.HTTP_200_OK)
                 return response
     return HttpResponseBadRequest()
-
-
